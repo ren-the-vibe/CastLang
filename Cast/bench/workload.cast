@@ -1,0 +1,34 @@
+// ── Cast workload: poison-field tick ──────────────────────────────────────────
+// Representative game logic, run once per entity per tick. @s is the current
+// entity (set by the harness's `@e PoisonTick` call, rebound per entity).
+// Conditional branches in Cast are expressions or bare calls (not scope-prefixed
+// commands), so helpers are invoked bare — @s is already the ambient subject.
+// Must match the C#/Lua/Python/JS versions exactly.
+//
+//   if poisoned:  dmg = Clamp(max_health*0.05, 1, 25); health -= dmg;
+//                 if health<=0: poisoned=0, health=0; total_damage += dmg
+//   elif health < max_health*0.30:
+//                 regen = Min(max_health*0.02, max_health-health); health += regen
+//   checksum += health
+
+Die::
+    @s.poisoned = 0 ;
+    @s.health = 0
+::
+
+ApplyPoison::
+    $dmg = Clamp[@s.max_health * 0.05, 1, 25] ;
+    @s.health = @s.health - $dmg ;
+    @s.health ? ..0 ?> Die ;
+    @v:total_damage = @v:total_damage + $dmg
+::
+
+Regen::
+    $regen = Min[@s.max_health * 0.02, @s.max_health - @s.health] ;
+    @s.health = @s.health + $regen
+::
+
+PoisonTick::
+    @s.poisoned ?> ApplyPoison ?? @s.health ? ..(@s.max_health * 0.30) ?> Regen ;
+    @v:checksum = @v:checksum + @s.health
+::

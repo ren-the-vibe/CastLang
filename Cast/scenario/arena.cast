@@ -1,0 +1,30 @@
+// ── Bloodline Arena — Cast rules ──────────────────────────────────────────────
+// The host owns physics (movement, collision, push, death-plane geometry). Cast
+// owns the consequences: deaths at the boundary, the mage's curse, and the curse's
+// effect. Births are driven by the host calling `spawn` with inherited ancestry
+// (the host knows which pair collided and where), so the spawn grammar is exercised
+// from the host side; the rules below are the standing/triggered Cast logic.
+
+// Death planes: any non-mage creature flagged out-of-bounds by the host (tagged
+// 'oob' this tick) is killed. The mage is immune — it never carries 'oob', and Kill
+// skips mages in the host anyway, but the filter makes the intent explicit in Cast.
+DeathPlanes::
+    @e[in tags ? 'oob'] Kill
+::
+
+// The mage's response to being pushed into a death plane. The host sets
+// @v:curse:lineage to the offending creature's OWN lineage id and binds @s to the
+// mage before calling this. Effect: teleport the mage to world center, then raise a
+// STANDING curse over that creature's subtree. Because it's a standing cast keyed on
+// a stored @v lineage id, it keeps tagging descendants born afterward ("going
+// forward"), and it persists with the world.
+MageCursed::
+    @s -> @v:spawn:center ;
+    say['The mage is cast out and curses bloodline ', @v:curse:lineage] ;
+    cast @e[in ancestors ? @v:curse:lineage] Curse
+::
+
+// The curse itself: tag the creature as cursed. Does nothing else.
+Curse::
+    @s tag['cursed']
+::

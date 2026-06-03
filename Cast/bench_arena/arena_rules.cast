@@ -1,0 +1,33 @@
+// ── Benchmark arena — Cast rules ──────────────────────────────────────────────
+// The host runs the IDENTICAL native physics as the other four languages. Only
+// these rules run through the Cast interpreter, so the Cast row measures interpreter
+// overhead on the scripted portion of a realistic mixed workload.
+//
+// The host exposes per-creature properties (alive, oob, is_mage, lineage, ancestors,
+// cursed) and drives @v:curse:lineage / @v:has_curse for the standing curse.
+
+// Kill every out-of-bounds non-mage creature. (Host's Kill flips alive=false and
+// counts the death.)
+KillOob::
+    @e[oob ? 1] Kill
+::
+
+// Apply the curse to a bloodline subtree: tag everyone carrying the offender's
+// lineage id. Fired both at curse-time (over the existing subtree) and every tick
+// after (to catch descendants born "going forward").
+ApplyCurse::
+    @e[in ancestors ? @v:curse:lineage] tag['cursed']
+::
+
+// The mage's reaction when pushed out: record the standing curse and apply it now.
+// (The host has already set @v:curse:lineage to the offender's own lineage id and
+// teleported the mage; this raises/refreshes the curse over the subtree.)
+MageCursed::
+    @v:has_curse = 1 ;
+    ApplyCurse
+::
+
+// Per-tick standing curse: if a curse is active, re-apply it (newborn descendants).
+StandingCurse::
+    @v:has_curse ?> ApplyCurse
+::
