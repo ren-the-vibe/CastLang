@@ -187,8 +187,4 @@ The language and its reference host interface are complete and tested: lexer, pa
 - `cast_spec.md` — the complete language specification
 - `cast_guide.md` — a script-writer's guide
 - `cast_grammar.md` — the formal PEG grammar
-- `Cast/README.md` — implementation status and internals
 
-## License
-
-TBD.
